@@ -12,6 +12,7 @@ public class Main {
      *
      * @param candidates the Set of Candidate that can be chosen from
      * @param politicalLeaning Double ranging from -1 to 1 representing the political leaning of the Voter
+     * @param politicalLeaningTolerance Double representing how closely a Party has to match the Voter's political leaning
      * @param popularityCare Double representing how much the Voter cares about the popularity of a Party
      * @param ageGroup Integer representing the age group the Voter is part of
      * @param gender Integer representing the voter's gender
@@ -19,15 +20,15 @@ public class Main {
      * @param partyPopularityMultipliers a Map of Parties to Doubles representing multipliers of each Party's popularity, signifying how each Party's popularity in the constituency varies from the regional average
      * @return the next Candidate in the Voter's preference order
      */
-    private static Candidate getClosestCandidate(Set<Candidate> candidates, Double politicalLeaning, Double popularityCare, Integer ageGroup, Integer gender, Map<Party, Double> partyPopularities, Map<Party, Double> partyPopularityMultipliers) {
-        Double leaningNearness = Double.MAX_VALUE;
+    private static Candidate getClosestCandidate(Set<Candidate> candidates, Double politicalLeaning, Double politicalLeaningTolerance, Double popularityCare, Integer ageGroup, Integer gender, Map<Party, Double> partyPopularities, Map<Party, Double> partyPopularityMultipliers) {
+        Double leaningNearness = politicalLeaningTolerance;
         Candidate closestCandidate = null;
 
         for (Candidate candidate : candidates) {
             Party party = candidate.getParty();
-            Double candidateCompatibility = abs(party.getPoliticalLeaning() - politicalLeaning);
+            double candidateCompatibility = abs(party.getPoliticalLeaning() - politicalLeaning);
 
-            if (candidateCompatibility < leaningNearness && (party.getPopularity(ageGroup, gender) + partyPopularities.get(party)) * partyPopularityMultipliers.get(party) >= popularityCare) {
+            if (candidateCompatibility <= leaningNearness && (party.getPopularity(ageGroup, gender) + partyPopularities.get(party)) * partyPopularityMultipliers.get(party) >= popularityCare) {
                 leaningNearness = candidateCompatibility;
                 closestCandidate = candidate;
             }
@@ -43,6 +44,7 @@ public class Main {
      *
      * @param candidates the Set of Candidates that the Voter can vote for
      * @param politicalLeaning Double ranging from -1 to 1 representing the political leaning of the Voter
+     * @param politicalLeaningTolerance Double representing how closely a Party has to match the Voter's political leaning
      * @param popularityCare Double representing how much the Voter cares about the popularity of a Party
      * @param ageGroup Integer representing the age group the Voter is part of
      * @param gender Integer representing the voter's gender
@@ -50,11 +52,11 @@ public class Main {
      * @param partyPopularityMultipliers a Map of Parties to Doubles representing multipliers of each Party's popularity, signifying how each Party's popularity in the constituency varies from the regional average
      * @return a List of some of the Constituency's Candidates in order of preference
      */
-    private static List<Candidate> rankCandidates(Set<Candidate> candidates, Double politicalLeaning, Double popularityCare, Integer ageGroup, Integer gender, Map<Party, Double> partyPopularities, Map<Party, Double> partyPopularityMultipliers) {
+    private static List<Candidate> rankCandidates(Set<Candidate> candidates, Double politicalLeaning, Double politicalLeaningTolerance, Double popularityCare, Integer ageGroup, Integer gender, Map<Party, Double> partyPopularities, Map<Party, Double> partyPopularityMultipliers) {
         List<Candidate> ranking = new ArrayList<>();
 
         while (true) {
-            Candidate nextCandidate = getClosestCandidate(candidates, politicalLeaning, popularityCare, ageGroup, gender, partyPopularities, partyPopularityMultipliers);
+            Candidate nextCandidate = getClosestCandidate(candidates, politicalLeaning, politicalLeaningTolerance, popularityCare, ageGroup, gender, partyPopularities, partyPopularityMultipliers);
 
             if (nextCandidate == null) {
                 break;
@@ -63,13 +65,6 @@ public class Main {
             ranking.add(nextCandidate);
             candidates.remove(nextCandidate);
 //            System.out.println(nextCandidate.getParty().getName());
-
-            if (random() < 0.25) {
-                break;
-            }
-
-            popularityCare -= 0.01;
-
         }
 
         return ranking;
@@ -90,10 +85,15 @@ public class Main {
 
         for (int i = 0; i < voterCount; i++) {
             Double politicalLeaning = random() * 1.8 - 0.9;
-            Double popularityCare = random() * 0.25;
+            Double politicalLeaningTolerance = random() * 1.8;
+            Double popularityCare = random() * 0.5;
             Integer ageGroup = (int) floor((random() * 5));
             Integer gender = (int) floor(random() * 2);
-            voters.add(new Voter(rankCandidates(new HashSet<>(candidates), politicalLeaning, popularityCare, ageGroup, gender, partyPopularities, partyPopularityMultipliers)));
+            List<Candidate> rankedCandidates = rankCandidates(new HashSet<>(candidates), politicalLeaning, politicalLeaningTolerance, popularityCare, ageGroup, gender, partyPopularities, partyPopularityMultipliers);
+
+            if (!rankedCandidates.isEmpty()) {
+                voters.add(new Voter(rankedCandidates));
+            }
 //            System.out.println("----------");
         }
 
@@ -121,7 +121,9 @@ public class Main {
                 partyPopularityMultipliers.put(party, random() * 1.5 + 0.5);
             }
 
-            Set<Voter> voters = generateVoters((int) (69724 + random() * 7338), candidates, parties, partyPopularityMultipliers);
+            int votersCount = (int) (69724 + random() * 7338);
+            Set<Voter> voters = generateVoters(votersCount, candidates, parties, partyPopularityMultipliers);
+            System.out.println("Voters count: " + votersCount + ", Voted: " + voters.size());
             constituencies.add(new Constituency(constituencyName, voters, candidates, 1));
         }
 

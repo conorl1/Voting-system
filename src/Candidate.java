@@ -7,18 +7,21 @@ import java.util.Map;
 public class Candidate {
     private final String name;
     private Party party;
-    private Map<Voter, Double> votes;
+    private final Map<Voter, Double> votes;
+    private final Region region;
 
     /**
      * Creates a new Candidate object, a member of the Party specified.
      *
      * @param name the name of the Candidate
      * @param party the Party the Candidate is a member of
+     * @param region the Region the Candidate is a Candidate in
      */
-    Candidate(String name, Party party) {
+    Candidate(String name, Party party, Region region) {
         this.name = name;
         this.party = party;
-        party.addCandidate(this);
+        this.region = region;
+        party.addCandidate(region, this);
         votes = new HashMap<>();
     }
 
@@ -80,8 +83,8 @@ public class Candidate {
      * @param newParty The new Party the Candidate is changing to
      */
     public void changeParty(Party newParty) {
-        party.removeCandidate(this);
-        newParty.addCandidate(this);
+        party.removeCandidate(region, this);
+        newParty.addCandidate(region, this);
         party = newParty;
     }
 

@@ -5,7 +5,7 @@ import java.util.*;
  */
 public class Party {
     private final String name;
-    private final Set<Candidate> candidates;
+    private Map<Region, Set<Candidate>> candidates;
     private final Double politicalLeaning;
     private final Double popularity;
     private final List<Double> agePopularityModifiers;
@@ -25,7 +25,7 @@ public class Party {
         this.name = name;
         this.politicalLeaning = politicalLeaning;
         this.popularity = popularity;
-        candidates = new HashSet<>();
+        candidates = new HashMap<>();
         this.agePopularityModifiers = agePopularityModifiers;
         this.genderPopularityModifiers = genderPopularityModifiers;
         votes = new HashMap<>();
@@ -34,28 +34,39 @@ public class Party {
     /**
      * Adds a Set of Candidates to this Party.
      *
+     * @param region the Region the Candidates are located in
      * @param candidates Set of Candidates
      */
-    public void addCandidates(Set<Candidate> candidates) {
-        this.candidates.addAll(candidates);
+    public void addCandidates(Region region, Set<Candidate> candidates) {
+        this.candidates.put(region, candidates);
     }
 
     /**
      * Adds a Candidate to this Party.
      *
+     * @param region the Region the Candidate is located in
      * @param candidate a Candidate
      */
-    public void addCandidate(Candidate candidate) {
-        candidates.add(candidate);
+    public void addCandidate(Region region, Candidate candidate) {
+        Set<Candidate> regionCandidates = candidates.computeIfAbsent(region, k -> new HashSet<>());
+        regionCandidates.add(candidate);
     }
 
     /**
      * Removes the input Candidate from this Party.
      *
+     * @param region the Region the Candidate is located in
      * @param candidate a Candidate
      */
-    public void removeCandidate(Candidate candidate) {
-        candidates.remove(candidate);
+    public void removeCandidate(Region region, Candidate candidate) {
+        candidates.get(region).remove(candidate);
+    }
+
+    /**
+     * Deletes all Candidates from the Party.
+     */
+    public void removeCandidates() {
+        candidates = new HashMap<>();
     }
 
     /**
@@ -70,10 +81,11 @@ public class Party {
     /**
      * Returns a Set of the Candidates in this Party.
      *
+     * @param region the Region the Candidates to be returned are located in
      * @return the Set of Candidates in this Party
      */
-    public Set<Candidate> getCandidates() {
-        return candidates;
+    public Set<Candidate> getCandidates(Region region) {
+        return candidates.get(region);
     }
 
     /**
@@ -128,6 +140,13 @@ public class Party {
      */
     public void addVote(Voter voter, Double fraction) {
         votes.put(voter, fraction);
+    }
+
+    /**
+     * Deletes all votes for the Party.
+     */
+    public void resetVotes() {
+        votes = new HashMap<>();
     }
 
 }

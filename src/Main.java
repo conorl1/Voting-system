@@ -104,11 +104,12 @@ public class Main {
     /**
      * Creates the number of Constituencies input.
      *
-     * @param constituencyCount an Integer number of Constituencies to generate.
+     * @param constituencyCount an Integer number of Constituencies to generate
      * @param parties a Map of Parties to Doubles representing the relative popularity of each Party in the region
+     * @param region the Region the Constituencies are being created for
      * @return a Set of the Constituencies created
      */
-    private static Set<Constituency> generateConstituencies(Integer constituencyCount, Map<Party, Double> parties) {
+    private static Set<Constituency> generateConstituencies(Integer constituencyCount, Map<Party, Double> parties, Region region) {
         Set<Constituency> constituencies  = new HashSet<>();
 
         for (int i = 0; i < constituencyCount; i++) {
@@ -117,13 +118,13 @@ public class Main {
             Map<Party, Double> partyPopularityMultipliers = new HashMap<>();
 
             for (Party party : parties.keySet()) {
-                candidates.add(new Candidate(party.getName() + constituencyName + "Candidate", party));
+                candidates.add(new Candidate(party.getName() + constituencyName + "Candidate", party, region));
                 partyPopularityMultipliers.put(party, random() * 1.5 + 0.5);
             }
 
             int votersCount = (int) (69724 + random() * 7338);
             Set<Voter> voters = generateVoters(votersCount, candidates, parties, partyPopularityMultipliers);
-            System.out.println("Voters count: " + votersCount + ", Voted: " + voters.size());
+//            System.out.println("Voters: " + votersCount + ", Voted: " + voters.size());
             constituencies.add(new Constituency(constituencyName, voters, candidates, 1));
         }
 
@@ -131,50 +132,124 @@ public class Main {
     }
 
     /**
-     * main method for testing code.
+     * Generates a Set of Regions with the number of Constituencies input.
+     *
+     * @param parties a Map of Parties to Lists of Doubles representing the relative popularity of each Party in each region
+     * @param constituencyCounts a List of Integers representing the number of Constituencies in each Region
+     * @return a Set of Regions
+     */
+    private static Set<Region> generateRegions(Map<Party, List<Double>> parties, List<Integer> constituencyCounts) {
+        Set<Region> regions = new HashSet<>();
+        int i = 0;
+
+        for (Integer count : constituencyCounts) {
+            Map<Party, Double> regionParties = new HashMap<>();
+
+            for (Party party : parties.keySet()) {
+                regionParties.put(party, parties.get(party).get(i));
+            }
+
+            Region region = new Region("Region" + i, count * 2, regionParties.keySet());
+            region.addConstituencies(generateConstituencies(count, regionParties, region));
+            regions.add(region);
+            i++;
+        }
+
+        return regions;
+    }
+
+    /**
+     * Generates a Set of Regions and runs an election in each of them, returning the overall votes for each Party.
+     *
+     * @param parties a Map of Parties to Lists of Doubles representing the relative popularity of each Party in each region
+     * @param constituencyCounts a List of Integers representing the number of Constituencies in each Region
+     * @return a Map of Parties to Integers representing the number of Votes each Party received in the election
+     */
+    public static Map<Party, Integer> simulateElection(Map<Party, List<Double>> parties, List<Integer> constituencyCounts) {
+        // Generate regions
+        Set<Region> regions = generateRegions(parties, constituencyCounts);
+        Map<Party, Integer> overallResults = new HashMap<>();
+
+        // Run the election
+        for (Region region : regions) {
+//            System.out.println(region.getName());
+            List<Candidate> elected = region.election();
+            Map<Party, Integer> results = new HashMap<>();
+
+            // Display aggregated counts of votes per party
+            for (Candidate candidate : elected) {
+                Party party = candidate.getParty();
+                results.put(party, results.getOrDefault(party, 0) + 1);
+                overallResults.put(party, overallResults.getOrDefault(party, 0) + 1);
+            }
+
+//            for (Party party : results.keySet()) {
+//                System.out.println(party.getName() + " " + results.get(party));
+//            }
+
+//            System.out.println("----------");
+        }
+
+        // Display overall results
+//        System.out.println("Overall results:");
+
+//        for (Party party : overallResults.keySet()) {
+//            System.out.println(party.getName() + ": " + overallResults.get(party));
+//        }
+
+        return overallResults;
+    }
+
+    /**
+     * Main method for running code.
      *
      * @param args
      */
     public static void main(String[] args) {
         // Set up test Parties
-        Map<Party, Double> parties = new HashMap<>();
-        Party circleParty = new Party("Circle Party", 0.6, 0.13, Arrays.asList(0.2,0.06,0.02,-0.04,-0.11), Arrays.asList(-0.01,0.02));
-        Party lineParty = new Party("Line Party", -0.4, 0.2, Arrays.asList(-0.11,-0.06,-0.04,-0.01,0.18), Arrays.asList(-0.03,0.01));
-        Party triangleParty = new Party("Triangle Party", -0.6, 0.26, Arrays.asList(-0.11,-0.08,-0.01,0.03,0.02), Arrays.asList(0.03,-0.04));
-        Party squareParty = new Party("Square Party", 0.2, 0.21, Arrays.asList(0.03,0.09,0.03,-0.01,-0.08), Arrays.asList(0.0,0.0));
-        Party pentagonParty = new Party("Pentagon Party", -0.2, 0.11, Arrays.asList(0.0,-0.01,0.01,0.01,0.03), Arrays.asList(0.0,0.01));
-        Party hexagonParty = new Party("Hexagon Party", -0.8, 0.03, Arrays.asList(0.0,-0.01,-0.01,0.0,-0.02), Arrays.asList(0.0,0.0));
-        Party septagonParty = new Party("Septagon Party", 0.8, 0.02, Arrays.asList(0.0,0.0,0.0,0.01,-0.01), Arrays.asList(0.0,0.0));
-        Party octagonParty = new Party("Octagon Party", 0.0, 0.03, Arrays.asList(-0.01,0.01,0.0,0.0,-0.02), Arrays.asList(0.0,0.0));
-        Party nonagonParty = new Party("Nonagon Party", 0.4, 0.01, Arrays.asList(0.01,0.01,0.0,0.0,-0.01), Arrays.asList(0.0,0.0));
+        Map<Party, List<Double>> parties = new HashMap<>();
+        Party circleParty = new Party("Circle Party", 0.6, 0.1, Arrays.asList(0.2,0.08,0.02,-0.03,-0.07), Arrays.asList(0.0,0.03));
+        Party lineParty = new Party("Line Party", -0.4, 0.2, Arrays.asList(-0.13,-0.08,-0.06,-0.02,0.18), Arrays.asList(-0.02,0.01));
+        Party triangleParty = new Party("Triangle Party", -0.6, 0.25, Arrays.asList(-0.1,-0.05,-0.04,0.03,0.04), Arrays.asList(0.05,-0.02));
+        Party squareParty = new Party("Square Party", 0.2, 0.26, Arrays.asList(0.0,0.06,0.03,-0.02,-0.08), Arrays.asList(-0.04,-0.04));
+        Party pentagonParty = new Party("Pentagon Party", -0.2, 0.1, Arrays.asList(0.01,0.0,-0.01,0.03,-0.02), Arrays.asList(0.01,0.02));
+        Party hexagonParty = new Party("Hexagon Party", -0.8, 0.02, Arrays.asList(0.0,0.01,0.01,0.01,-0.01), Arrays.asList(0.02,0.01));
+        Party septagonParty = new Party("Septagon Party", 0.8, 0.01, Arrays.asList(0.01,0.01,0.01,0.01,0.0), Arrays.asList(0.01,0.01));
+        Party octagonParty = new Party("Octagon Party", 0.0, 0.03, Arrays.asList(0.01,-0.01,-0.01,0.01,-0.01), Arrays.asList(0.0,0.0));
+        Party nonagonParty = new Party("Nonagon Party", 0.4, 0.01, Arrays.asList(0.02,0.0,0.0,0.0,0.0), Arrays.asList(0.01,0.0));
 
         // Set up Map of Parties with relative regional popularities
-        parties.put(circleParty,0.0);
-        parties.put(lineParty,0.05);
-        parties.put(triangleParty,0.0);
-        parties.put(squareParty,-0.08);
-        parties.put(pentagonParty,0.08);
-        parties.put(hexagonParty,0.0);
-        parties.put(septagonParty,0.0);
-        parties.put(octagonParty,-0.03);
-        parties.put(nonagonParty,-0.01);
+        parties.put(circleParty,Arrays.asList(0.04,0.0,-0.02,-0.01,0.0,0.0,0.01,-0.02,-0.01,-0.03,-0.03));
+        parties.put(lineParty,Arrays.asList(0.0,0.01,0.01,0.04,0.01,0.03,0.03,-0.05,-0.04,-0.1,-0.09));
+        parties.put(triangleParty,Arrays.asList(-0.07,0.01,0.05,0.02,0.06,0.03,0.02,0.02,0.05,-0.06,0.02));
+        parties.put(squareParty,Arrays.asList(0.06,-0.08,-0.09,-0.07,-0.05,-0.04,-0.03,0.07,0.05,-0.08,-0.07));
+        parties.put(pentagonParty,Arrays.asList(0.01,0.08,0.05,0.02,-0.02,-0.02,-0.01,-0.03,0.0,0.0,-0.03));
+        parties.put(hexagonParty,Arrays.asList(0.0,0.0,0.01,0.01,0.0,0.01,0.01,0.0,0.0,0.01,0.0));
+        parties.put(septagonParty,Arrays.asList(0.0,0.0,0.01,0.01,0.0,0.01,0.0,0.01,-0.01,0.01,0.0));
+        parties.put(octagonParty,Arrays.asList(-0.03,-0.03,-0.03,-0.03,-0.03,-0.03,-0.03,-0.03,-0.03,0.29,-0.03));
+        parties.put(nonagonParty,Arrays.asList(-0.01,-0.01,-0.01,-0.01,-0.01,-0.01,-0.01,-0.01,-0.01,-0.01,0.23));
 
-        // Create the Region for testing
-        Region testRegion = new Region("Test region", 92, generateConstituencies(46, parties), parties);
+        List<Integer> constituencyCounts = Arrays.asList(37,46,29,31,24,29,27,37,14,29,16);
 
-        // Run the election
-        List<Candidate> elected = testRegion.election();
+        // Run simulator repeatedly
+        int runs = 10;
+        Map<Party, Integer> resultsTotals = new HashMap<>();
 
-        Map<Party, Integer> results = new HashMap<>();
+        for (int i = 0; i < runs; i++) {
+            System.out.println("Running simulation " + i);
+            Map<Party, Integer> results = simulateElection(parties, constituencyCounts);
 
-        // Display aggregated counts of votes per party
-        for (Candidate candidate : elected) {
-            Party party = candidate.getParty();
-            results.put(party, results.getOrDefault(party, 0) + 1);
+            for (Party party : results.keySet()) {
+                resultsTotals.put(party, resultsTotals.getOrDefault(party, 0) + results.get(party));
+                party.removeCandidates();
+            }
+
         }
 
-        for (Party party : results.keySet()) {
-            System.out.println(party.getName() + " " + results.get(party));
+        // Display average results
+        for (Party party : resultsTotals.keySet()) {
+            int averageTotal = resultsTotals.get(party) / runs;
+            System.out.println(party.getName() + ": " + averageTotal);
         }
 
     }

@@ -1,12 +1,10 @@
 import java.util.List;
-import java.util.Set;
 
 /**
  * Class representing a Voter
  */
 public class Voter {
     private final List<Candidate> candidateRanking;
-    private Integer currentRankingPlace;
 
     /**
      * Creates a new Voter object.
@@ -15,7 +13,6 @@ public class Voter {
      */
     Voter(List<Candidate> ranking) {
         this.candidateRanking = ranking;
-        currentRankingPlace = 0;
     }
 
     /**

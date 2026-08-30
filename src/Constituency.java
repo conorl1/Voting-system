@@ -73,7 +73,7 @@ public class Constituency {
 
             for (Voter voter : candidateVotes.keySet()) {
                 List<Candidate> voterRanking = voter.getRanking();
-                Boolean voterHasNextCandidate = false;
+                boolean voterHasNextCandidate = false;
 
                 for (Candidate chosenCandidate : voterRanking) {
 

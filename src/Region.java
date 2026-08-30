@@ -7,26 +7,31 @@ import static java.lang.Math.max;
  * Representation of a region.
  */
 public class Region {
-    private String name;
+    private final String name;
     private Set<Constituency> constituencies;
-    private Set<Party> parties;
-    private Map<Party, Double> partyPopularities;
-    private Integer seatsAvailable;
+    private final Set<Party> parties;
+    private final Integer seatsAvailable;
 
     /**
      * Creates a new Region object.
      *
      * @param name the name of the Region
      * @param seatsAvailable the number of seats available in the Region, should be equal to double the total number of seats available in all the Constituencies in the Region
-     * @param constituencies Set of all the Constituencies in the Region
-     * @param partyPopularities Map of Parties to Doubles representing the relative popularity of each Party in the Region
+     * @param parties Set of Parties in the Region
      */
-    Region(String name, Integer seatsAvailable, Set<Constituency> constituencies, Map<Party, Double> partyPopularities) {
+    Region(String name, Integer seatsAvailable, Set<Party> parties) {
         this.name = name;
         this.seatsAvailable = seatsAvailable;
+        this.parties = parties;
+    }
+
+    /**
+     * Adds a set of Constituencies to the Region.
+     *
+     * @param constituencies Set of all the Constituencies in the Region
+     */
+    public void addConstituencies(Set<Constituency> constituencies) {
         this.constituencies = constituencies;
-        this.parties = partyPopularities.keySet();
-        this.partyPopularities = partyPopularities;
     }
 
     /**
@@ -92,7 +97,7 @@ public class Region {
         Double highestVotes = 0.0;
         Candidate mostVoted = null;
 
-        for (Candidate partyCandidate : party.getCandidates()) {
+        for (Candidate partyCandidate : party.getCandidates(this)) {
             if (!electedCandidates.contains(partyCandidate)) {
                 Double candidateVotes = partyCandidate.getVoteCount();
 
@@ -176,13 +181,13 @@ public class Region {
                     Set<Party> assignedExtra = new HashSet<>();
 
                     for (int i = 0; i < seatsAvailable - seatsAssigned; i++) {
-                        Double highestRemainder = 0.0;
+                        double highestRemainder = 0.0;
                         Party extraSeatParty = null;
 
                         for (Party party : electedParties) {
 
                             if (!assignedExtra.contains(party)) {
-                                Double remainder = (party.getVoteCount() / population * seatsAvailable) - partySeats.get(party);
+                                double remainder = (party.getVoteCount() / population * seatsAvailable) - partySeats.get(party);
 
                                 if (remainder > highestRemainder) {
                                     highestRemainder = remainder;
@@ -204,10 +209,10 @@ public class Region {
 
         }
 
-        for (Party party : partySeats.keySet()) {
-            System.out.println(party.getName() + " " + partySeats.get(party));
-        }
-        System.out.println("\n");
+//        for (Party party : partySeats.keySet()) {
+//            System.out.println(party.getName() + " " + partySeats.get(party));
+//        }
+//        System.out.println("\n");
 
         // Get the winner of each individual constituency's election and assign them seats
         for (Constituency constituency : constituencies) {
@@ -292,7 +297,20 @@ public class Region {
 
         }
 
+        // Reset Party seat counts
+        for (Party party : parties) {
+            party.resetVotes();
+        }
+
         return electedCandidates;
     }
 
+    /**
+     * Returns the name of the Region.
+     *
+     * @return the name of the Region
+     */
+    public String getName() {
+        return name;
+    }
 }
